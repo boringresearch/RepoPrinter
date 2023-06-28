@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GitHub Repo Reader</title>
+</head>
+<body>
+    <h1>GitHub Repo Reader</h1>
+
+    <input type="text" id="repoInput" placeholder="Enter repo link or name">
+    <input type="text" id="fileFilter" placeholder="Enter file filter (optional)">
+
+    <button onclick="getRepoContent()">Get Repo Content</button>
+
+    <div id="output"></div>
+
+    <script>
+        async function getRepoContent() {
+            const repoInput = document.getElementById('repoInput').value;
+            const fileFilter = document.getElementById('fileFilter').value;
+            const outputDiv = document.getElementById('output');
+
+            // Parse input to extract repo owner, name, subfolder
+            const [_, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
+            const apiBaseUrl = 'https://api.github.com/repos';
+            let url = `${apiBaseUrl}/${owner}/${repo}/contents/${path.join('/')}`;
+
+            let response = await fetch(url);
+            let data = await response.json();
+
+            outputDiv.innerHTML = ''; // Clear previous output
+            for (let item of data) {
+                if (item.type === 'file' && (fileFilter === '' || item.name.endsWith(fileFilter))) {
+                    let fileResponse = await fetch(item.git_url);
+                    let fileData = await fileResponse.json();
+                    let fileContent = atob(fileData.content); // Base64 decode
+
+                    outputDiv.innerHTML += `<h2>${item.name}</h2>
+                                            <pre>${fileContent}</pre>`;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
