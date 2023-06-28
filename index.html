@@ -15,6 +15,18 @@
     <div id="output"></div>
 
     <script>
+        function escapeHTML(text) {
+            const map = {
+                '<': '&lt;',
+                '>': '&gt;',
+                '&': '&amp;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+
+            return text.replace(/[<>&"']/g, function(m) { return map[m]; });
+        }
+
         async function getRepoContent() {
             const repoInput = document.getElementById('repoInput').value;
             const fileFilter = document.getElementById('fileFilter').value;
@@ -49,9 +61,10 @@
                     let fileResponse = await fetch(item.git_url);
                     let fileData = await fileResponse.json();
                     let fileContent = atob(fileData.content); // Base64 decode
+                    let escapedContent = escapeHTML(fileContent);
 
                     outputDiv.innerHTML += `<h2>${item.name}</h2>
-                                            <pre>${fileContent}</pre>`;
+                                            <pre><code>${escapedContent}</code></pre>`;
                 }
             }
             copyBtn.style.display = 'block'; // Show the copy button
