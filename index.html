@@ -10,6 +10,7 @@
     <input type="text" id="fileFilter" placeholder="Enter file filter (optional)">
 
     <button onclick="getRepoContent()">Get Repo Content</button>
+    <button onclick="copyToClipboard()" style="display:none;" id="copyBtn">Copy to Clipboard</button>
 
     <div id="output"></div>
 
@@ -18,14 +19,29 @@
             const repoInput = document.getElementById('repoInput').value;
             const fileFilter = document.getElementById('fileFilter').value;
             const outputDiv = document.getElementById('output');
+            const copyBtn = document.getElementById('copyBtn');
 
             // Parse input to extract repo owner, name, subfolder
-            const [_, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
+            let [_, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
+            if (repoInput.startsWith('https://')) {
+                // Remove first two elements as they're just "https:" and "github.com"
+                [_, _, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
+            }
+            if (!owner || !repo) {
+                alert('Invalid input. Please input a complete GitHub URL or "owner/repo" format');
+                return;
+            }
             const apiBaseUrl = 'https://api.github.com/repos';
             let url = `${apiBaseUrl}/${owner}/${repo}/contents/${path.join('/')}`;
 
             let response = await fetch(url);
             let data = await response.json();
+
+            // Check if data is iterable (is an array), if not it's probably an error message
+            if (!Array.isArray(data)) {
+                alert(`Error fetching repo content: ${data.message}`);
+                return;
+            }
 
             outputDiv.innerHTML = ''; // Clear previous output
             for (let item of data) {
@@ -38,6 +54,21 @@
                                             <pre>${fileContent}</pre>`;
                 }
             }
+            copyBtn.style.display = 'block'; // Show the copy button
+        }
+
+        function copyToClipboard() {
+            const outputDiv = document.getElementById('output');
+            const textToCopy = outputDiv.innerText;
+
+            let tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            alert('Content copied to clipboard');
         }
     </script>
 </body>
