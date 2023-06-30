@@ -32,7 +32,7 @@
             const fileFilter = document.getElementById('fileFilter').value;
             const outputDiv = document.getElementById('output');
             const copyBtn = document.getElementById('copyBtn');
-
+        
             // Parse input to extract repo owner, name, subfolder
             let [_, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
             if (repoInput.startsWith('https://')) {
@@ -45,30 +45,40 @@
             }
             const apiBaseUrl = 'https://api.github.com/repos';
             let url = `${apiBaseUrl}/${owner}/${repo}/contents/${path.join('/')}`;
-
+        
+            outputDiv.innerHTML = ''; // Clear previous output
+        
+            await fetchRepoContent(url, fileFilter, outputDiv);
+        
+            copyBtn.style.display = 'block'; // Show the copy button
+        }
+        
+        async function fetchRepoContent(url, fileFilter, outputDiv) {
             let response = await fetch(url);
             let data = await response.json();
-
+        
             // Check if data is iterable (is an array), if not it's probably an error message
             if (!Array.isArray(data)) {
                 alert(`Error fetching repo content: ${data.message}`);
                 return;
             }
-
-            outputDiv.innerHTML = ''; // Clear previous output
+        
             for (let item of data) {
-                if (item.type === 'file' && (fileFilter === '' || item.name.endsWith(fileFilter))) {
+                if (item.type === 'dir') {
+                    // Recursively fetch content from subfolders
+                    await fetchRepoContent(item.url, fileFilter, outputDiv);
+                } else if (item.type === 'file' && (fileFilter === '' || item.name.endsWith(fileFilter))) {
                     let fileResponse = await fetch(item.git_url);
                     let fileData = await fileResponse.json();
                     let fileContent = atob(fileData.content); // Base64 decode
                     let escapedContent = escapeHTML(fileContent);
-
+        
                     outputDiv.innerHTML += `<h2>${item.name}</h2>
                                             <pre><code>${escapedContent}</code></pre>`;
                 }
             }
-            copyBtn.style.display = 'block'; // Show the copy button
         }
+
 
         function copyToClipboard() {
             const outputDiv = document.getElementById('output');
