@@ -26,10 +26,9 @@
 
             return text.replace(/[<>&"']/g, function(m) { return map[m]; });
         }
-
         async function getRepoContent() {
             const repoInput = document.getElementById('repoInput').value;
-            const fileFilter = document.getElementById('fileFilter').value;
+            const pathFilter = document.getElementById('fileFilter').value;
             const outputDiv = document.getElementById('output');
             const copyBtn = document.getElementById('copyBtn');
         
@@ -48,12 +47,12 @@
         
             outputDiv.innerHTML = ''; // Clear previous output
         
-            await fetchRepoContent(url, fileFilter, outputDiv);
+            await fetchRepoContent(url, pathFilter, outputDiv);
         
             copyBtn.style.display = 'block'; // Show the copy button
         }
         
-        async function fetchRepoContent(url, fileFilter, outputDiv) {
+        async function fetchRepoContent(url, pathFilter, outputDiv) {
             let response = await fetch(url);
             let data = await response.json();
         
@@ -66,14 +65,14 @@
             for (let item of data) {
                 if (item.type === 'dir') {
                     // Recursively fetch content from subfolders
-                    await fetchRepoContent(item.url, fileFilter, outputDiv);
-                } else if (item.type === 'file' && (fileFilter === '' || item.name.endsWith(fileFilter))) {
+                    await fetchRepoContent(item.url, pathFilter, outputDiv);
+                } else if (item.type === 'file' && (pathFilter === '' || item.path.includes(pathFilter))) {
                     let fileResponse = await fetch(item.git_url);
                     let fileData = await fileResponse.json();
                     let fileContent = atob(fileData.content); // Base64 decode
                     let escapedContent = escapeHTML(fileContent);
         
-                    outputDiv.innerHTML += `<h2>${item.name}</h2>
+                    outputDiv.innerHTML += `<h2>${item.path}</h2>
                                             <pre><code>${escapedContent}</code></pre>`;
                 }
             }
