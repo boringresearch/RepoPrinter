@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GitHub Repo Reader</title>
+</head>
+<body>
+    <h1>GitHub Repo Reader</h1>
+
+    <input type="text" id="repoInput" placeholder="Enter repo link or name">
+    <input type="text" id="fileFilter" placeholder="Enter file filter (optional)">
+    <input type="password" id="tokenInput" placeholder="Enter GitHub Token (optional)">
+
+    <button onclick="getRepoContent()">Get Repo Content</button>
+    <button onclick="copyToClipboard()" style="display:none;" id="copyBtn">Copy to Clipboard</button>
+
+    <div id="output"></div>
+
+    <script>
+        function escapeHTML(text) {
+            const map = {
+                '<': '&lt;',
+                '>': '&gt;',
+                '&': '&amp;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+
+            return text.replace(/[<>&"']/g, function(m) { return map[m]; });
+        }
+
+        async function getRepoContent() {
+            const repoInput = document.getElementById('repoInput').value;
+            const pathFilter = document.getElementById('fileFilter').value;
+            const token = document.getElementById('tokenInput').value;
+            const outputDiv = document.getElementById('output');
+            const copyBtn = document.getElementById('copyBtn');
+
+            let [_, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
+            if (repoInput.startsWith('https://')) {
+                [_, _, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
+            }
+            if (!owner || !repo) {
+                alert('Invalid input. Please input a complete GitHub URL or "owner/repo" format');
+                return;
+            }
+            const apiBaseUrl = 'https://api.github.com/repos';
+            let url = `${apiBaseUrl}/${owner}/${repo}/contents/${path.join('/')}`;
+
+            outputDiv.innerHTML = '';
+
+            await fetchRepoContent(url, pathFilter, outputDiv, token);
+
+            copyBtn.style.display = 'block';
+        }
+
+        async function fetchRepoContent(url, pathFilter, outputDiv, token) {
+            const headers = token ? { 'Authorization': `token ${token}` } : {};
+            let response = await fetch(url, { headers: headers });
+            let data = await response.json();
+
+            if (!Array.isArray(data)) {
+                alert(`Error fetching repo content: ${data.message}`);
+                return;
+            }
+
+            for (let item of data) {
+                if (item.type === 'dir') {
+                    await fetchRepoContent(item.url, pathFilter, outputDiv, token);
+                } else if (item.type === 'file' && (pathFilter === '' || item.path.includes(pathFilter))) {
+                    let fileResponse = await fetch(item.git_url, { headers: headers });
+                    let fileData = await fileResponse.json();
+                    let fileContent = atob(fileData.content);
+                    let escapedContent = escapeHTML(fileContent);
+
+                    outputDiv.innerHTML += `<h2>${item.path}</h2>
+                                            <pre><code>${escapedContent}</code></pre>`;
+                }
+            }
+        }
+
+        function copyToClipboard() {
+            const outputDiv = document.getElementById('output');
+            const textToCopy = outputDiv.innerText;
+
+            let tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            alert('Content copied to clipboard');
+        }
+    </script>
+</body>
+</html>
