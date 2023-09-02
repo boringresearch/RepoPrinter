@@ -63,6 +63,7 @@
 
     <input type="text" id="repoInput" placeholder="Enter repo link or name">
     <input type="text" id="fileFilter" placeholder="Enter file filter (optional)">
+    <input type="text" id="fileUnselect" placeholder="Enter file unselect filter (optional)">
     <input type="password" id="tokenInput" placeholder="Enter GitHub Token (optional)">
 
     <button onclick="getRepoContent()">Get Repo Content</button>
@@ -109,6 +110,7 @@
         }
 
         async function fetchRepoContent(url, pathFilter, outputDiv, token) {
+            const unselectFilter = document.getElementById('fileUnselect').value;  // Get the unselect filter
             const headers = token ? { 'Authorization': `token ${token}` } : {};
             let response = await fetch(url, { headers: headers });
             let data = await response.json();
@@ -121,7 +123,8 @@
             for (let item of data) {
                 if (item.type === 'dir') {
                     await fetchRepoContent(item.url, pathFilter, outputDiv, token);
-                } else if (item.type === 'file' && (pathFilter === '' || item.path.includes(pathFilter))) {
+                } else if (item.type === 'file' && (pathFilter === '' || item.path.includes(pathFilter)) && !(unselectFilter !== '' && item.path.includes(unselectFilter))) {
+                    // Check against unselectFilter
                     let fileResponse = await fetch(item.git_url, { headers: headers });
                     let fileData = await fileResponse.json();
                     let fileContent = atob(fileData.content);
