@@ -108,19 +108,19 @@
 
             copyBtn.style.display = 'block';
         }
-        
+
         async function fetchRepoContent(url, pathFilter, outputDiv, token) {
             const unselectFilter = document.getElementById('fileUnselect').value;  // Get the unselect filter
             const skipFolders = ['node_modules', 'dist']; // Example folders to skip
             const headers = token ? { 'Authorization': `token ${token}` } : {};
             let response = await fetch(url, { headers: headers });
             let data = await response.json();
-        
+
             if (!Array.isArray(data)) {
                 alert(`Error fetching repo content: ${data.message}`);
                 return;
             }
-        
+
             for (let item of data) {
                 if (item.type === 'dir') {
                     // Skip the folder if its name matches any in the skipFolders array
@@ -133,8 +133,11 @@
                     let fileResponse = await fetch(item.git_url, { headers: headers });
                     let fileData = await fileResponse.json();
                     let fileContent = atob(fileData.content);
-                    let escapedContent = escapeHTML(fileContent);
-        
+                    let binaryString = Uint8Array.from(atob(fileData.content), c => c.charCodeAt(0));
+                    let textDecoder = new TextDecoder('utf-8');
+                    let decodedContent = textDecoder.decode(binaryString);
+                    let escapedContent = escapeHTML(decodedContent);
+
                     outputDiv.innerHTML += `<h2>${item.path}</h2>
                                             <pre><code>${escapedContent}</code></pre>`;
                 }
