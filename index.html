@@ -1,64 +1,99 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>GitHub Repo Reader and Chat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repo Reader and AI Chat</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.3/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/github.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #FFC107;
+            --background-color: #F5F5F5;
+            --text-color: #333;
+            --chat-user-bg: #E3F2FD;
+            --chat-ai-bg: #FFFFFF;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f2f2f2;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
             line-height: 1.6;
         }
 
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
         h1 {
-            color: #333;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 10px;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
         }
 
         input {
-            margin-top: 10px;
+            flex: 1;
             padding: 10px;
-            width: 300px;
             border: 1px solid #ccc;
             border-radius: 4px;
+            font-size: 14px;
         }
 
         button {
-            margin-top: 20px;
             padding: 10px 20px;
-            background-color: #007bff;
+            background-color: var(--primary-color);
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 14px;
         }
 
         button:hover {
-            background-color: #0056b3;
+            background-color: #1976D2;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
         }
 
         #output {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         #output h2 {
-            color: #007bff;
-            margin-top: 20px;
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
         }
 
         pre {
-            background-color: #f9f9f9;
-            padding: 10px;
-            border: 1px solid #ccc;
+            background-color: #f6f8fa;
             border-radius: 4px;
+            padding: 16px;
             overflow-x: auto;
             position: relative;
         }
@@ -68,8 +103,8 @@
             top: 5px;
             right: 5px;
             padding: 5px 10px;
-            background-color: #007bff;
-            color: white;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
             border: none;
             border-radius: 4px;
             cursor: pointer;
@@ -77,50 +112,41 @@
         }
 
         .copy-btn:hover {
-            background-color: #0056b3;
+            background-color: #FFA000;
         }
 
         #chatContainer {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
             margin-top: 30px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 15px;
-            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         #chatBox {
             height: 400px;
             overflow-y: auto;
-            border: 1px solid #ddd;
+            border: 1px solid #eee;
+            border-radius: 4px;
             padding: 10px;
             margin-bottom: 10px;
-        }
-
-        #chatInput {
-            width: calc(100% - 110px);
-            padding: 10px;
-            margin-right: 10px;
-        }
-
-        #sendButton {
-            width: 100px;
         }
 
         .message {
             margin-bottom: 15px;
             padding: 10px;
-            border-radius: 10px;
+            border-radius: 8px;
             max-width: 80%;
         }
 
         .user-message {
-            background-color: #e6f2ff;
+            background-color: var(--chat-user-bg);
             margin-left: auto;
             text-align: right;
         }
 
         .ai-message {
-            background-color: #f0f0f0;
+            background-color: var(--chat-ai-bg);
         }
 
         .message-content {
@@ -129,6 +155,7 @@
 
         .message-content pre {
             white-space: pre-wrap;
+            margin: 10px 0;
         }
 
         #jumpToChatBtn {
@@ -136,42 +163,92 @@
             bottom: 20px;
             right: 20px;
             z-index: 1000;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
         }
 
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid rgba(0,0,0,.3);
+            border: 3px solid rgba(0,0,0,.1);
             border-radius: 50%;
-            border-top-color: #007bff;
+            border-top-color: var(--primary-color);
             animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        #clearChatBtn {
+            background-color: #FF5722;
+        }
+
+        #clearChatBtn:hover {
+            background-color: #E64A19;
+        }
+
+        .version-control {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .version-control button {
+            margin: 0 10px;
+        }
+
+        #versionInfo {
+            font-size: 14px;
+            color: #666;
+        }
+
+        #deleteVersionBtn {
+            background-color: #f44336;
+        }
+
+        #deleteVersionBtn:hover {
+            background-color: #d32f2f;
+        }
     </style>
 </head>
 <body>
-    <h1>GitHub Repo Reader and Chat</h1>
+    <div class="container">
+        <h1>GitHub Repo Reader and AI Chat</h1>
 
-    <input type="text" id="repoInput" placeholder="Enter repo link or name">
-    <input type="text" id="fileFilter" placeholder="Enter file filter (optional)">
-    <input type="text" id="fileUnselect" placeholder="Enter file unselect filter (optional)">
-    <input type="password" id="tokenInput" placeholder="Enter GitHub Token (optional)">
-    <input type="text" id="apiUrlInput" placeholder="API URL" value="http://127.0.0.1:5000/chat">
+        <div class="input-group">
+            <input type="text" id="repoInput" placeholder="Enter repo link or name">
+            <input type="text" id="fileFilter" placeholder="Enter file filter (optional)">
+            <input type="text" id="fileUnselect" placeholder="Enter file unselect filter (optional)">
+            <input type="password" id="tokenInput" placeholder="Enter GitHub Token (optional)">
+            <input type="text" id="apiUrlInput" placeholder="API URL" value="http://127.0.0.1:5000/chat">
+        </div>
 
-    <button onclick="getRepoContent()">Get Repo Content</button>
-    <button onclick="copyToClipboard()" style="display:none;" id="copyBtn">Copy to Clipboard</button>
+        <div class="button-group">
+            <button onclick="getRepoContent()">Get Repo Content</button>
+            <button onclick="copyToClipboard()" id="copyBtn" style="display:none;">Copy to Clipboard</button>
+        </div>
 
-    <div id="output"></div>
+        <div id="output"></div>
 
-    <div id="chatContainer" style="display:none;">
-        <h2>Chat with AI about the repo</h2>
-        <div id="chatBox"></div>
-        <input type="text" id="chatInput" placeholder="Type your message...">
-        <button id="sendButton" onclick="sendMessage()">Send</button>
+        <div id="chatContainer" style="display:none;">
+            <h2>Chat with AI about the repo</h2>
+            <div id="chatBox"></div>
+            <div class="input-group">
+                <input type="text" id="chatInput" placeholder="Type your message...">
+                <button id="sendButton" onclick="sendMessage()">Send</button>
+                <button id="clearChatBtn" onclick="clearChat()">Clear Chat</button>
+            </div>
+            <div class="version-control">
+                <button onclick="prevVersion()">&lt; Previous</button>
+                <span id="versionInfo">Version 1 / 1</span>
+                <button onclick="nextVersion()">Next &gt;</button>
+                <button id="deleteVersionBtn" onclick="deleteVersion()">Delete Version</button>
+            </div>
+        </div>
     </div>
 
     <button id="jumpToChatBtn" onclick="jumpToChat()" style="display:none;">Jump to Chat</button>
@@ -179,35 +256,81 @@
     <script>
         let repoContent = '';
         let sessionId = Date.now().toString();
+        let chatVersions = [];
+        let currentVersionIndex = 0;
 
-        // Load chat history from localStorage
         function loadChatHistory() {
-            const chatBox = document.getElementById('chatBox');
-            const savedChat = localStorage.getItem('chatHistory');
-            if (savedChat) {
-                chatBox.innerHTML = savedChat;
-                document.getElementById('chatContainer').style.display = 'block';
-                document.getElementById('jumpToChatBtn').style.display = 'block';
-                // Re-add event listeners to copy buttons
-                document.querySelectorAll('pre code').forEach((block) => {
-                    if (!block.previousSibling || !block.previousSibling.classList.contains('copy-btn')) {
-                        const button = document.createElement('button');
-                        button.className = 'copy-btn';
-                        button.textContent = 'Copy';
-                        button.addEventListener('click', () => copyCodeToClipboard(block));
-                        block.parentNode.insertBefore(button, block);
-                    }
-                });
+            const savedVersions = localStorage.getItem('chatVersions');
+            if (savedVersions) {
+                chatVersions = JSON.parse(savedVersions);
+                currentVersionIndex = chatVersions.length - 1;
+                displayCurrentVersion();
             }
         }
 
-        // Save chat history to localStorage
         function saveChatHistory() {
             const chatBox = document.getElementById('chatBox');
-            localStorage.setItem('chatHistory', chatBox.innerHTML);
+            if (currentVersionIndex === chatVersions.length) {
+                chatVersions.push(chatBox.innerHTML);
+            } else {
+                chatVersions[currentVersionIndex] = chatBox.innerHTML;
+            }
+            localStorage.setItem('chatVersions', JSON.stringify(chatVersions));
+            updateVersionInfo();
         }
 
-        // Load chat history on page load
+        function displayCurrentVersion() {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = chatVersions[currentVersionIndex] || '';
+            document.getElementById('chatContainer').style.display = 'block';
+            document.getElementById('jumpToChatBtn').style.display = 'block';
+            updateVersionInfo();
+            
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+                if (!block.previousSibling || !block.previousSibling.classList.contains('copy-btn')) {
+                    const button = document.createElement('button');
+                    button.className = 'copy-btn';
+                    button.textContent = 'Copy';
+                    button.addEventListener('click', () => copyCodeToClipboard(block));
+                    block.parentNode.insertBefore(button, block);
+                }
+            });
+        }
+
+        function updateVersionInfo() {
+            const versionInfo = document.getElementById('versionInfo');
+            versionInfo.textContent = `Version ${currentVersionIndex + 1} / ${chatVersions.length}`;
+        }
+
+        function prevVersion() {
+            if (currentVersionIndex > 0) {
+                currentVersionIndex--;
+                displayCurrentVersion();
+            }
+        }
+
+        function nextVersion() {
+            if (currentVersionIndex < chatVersions.length - 1) {
+                currentVersionIndex++;
+                displayCurrentVersion();
+            }
+        }
+
+        function deleteVersion() {
+            if (chatVersions.length > 0) {
+                chatVersions.splice(currentVersionIndex, 1);
+                if (currentVersionIndex >= chatVersions.length) {
+                    currentVersionIndex = chatVersions.length - 1;
+                }
+                if (currentVersionIndex < 0) {
+                    currentVersionIndex = 0;
+                }
+                localStorage.setItem('chatVersions', JSON.stringify(chatVersions));
+                displayCurrentVersion();
+            }
+        }
+
         window.onload = loadChatHistory;
 
         function escapeHTML(text) {
@@ -218,7 +341,6 @@
                 '"': '&quot;',
                 "'": '&#039;'
             };
-
             return text.replace(/[<>&"']/g, function(m) { return map[m]; });
         }
 
@@ -247,11 +369,10 @@
 
             await fetchRepoContent(url, pathFilter, outputDiv, token);
 
-            copyBtn.style.display = 'block';
+            copyBtn.style.display = 'inline-block';
             chatContainer.style.display = 'block';
             jumpToChatBtn.style.display = 'block';
 
-            // Add copy buttons to all code blocks
             document.querySelectorAll('pre code').forEach((block) => {
                 const button = document.createElement('button');
                 button.className = 'copy-btn';
@@ -290,7 +411,11 @@
 
                     outputDiv.innerHTML += `<h2>${item.path}</h2>
                                             <pre><code>${escapedContent}</code></pre>`;
-                    repoContent += `File: ${item.path}\n\n${decodedContent}\n\n`;
+                    repoContent += `File: ${item.path}
+
+${decodedContent}
+
+`;
                 }
             }
         }
@@ -334,13 +459,11 @@
 
             if (userMessage === '') return;
 
-            // Display user message
             chatBox.innerHTML += `<div class="message user-message">
                                     <div class="message-content">${escapeHTML(userMessage)}</div>
                                   </div>`;
             chatInput.value = '';
 
-            // Display loading animation
             chatBox.innerHTML += `<div class="message ai-message" id="loadingMessage">
                                     <div class="message-content">
                                         <div class="loading"></div> AI is thinking...
@@ -348,11 +471,13 @@
                                   </div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            // Save chat history
-            saveChatHistory();
+            const fullMessage = `Repository content:
 
-            // Prepare the message for the AI
-            const fullMessage = `Repository content:\n\n${repoContent}\n\nUser: ${userMessage}\n\nAI: Please provide a response based on the repository content above.`;
+${repoContent}
+
+User: ${userMessage}
+
+AI: Please provide a response based on the repository content above.`;
 
             try {
                 const response = await fetch(apiUrl, {
@@ -362,7 +487,7 @@
                     },
                     body: JSON.stringify({
                         session_id: sessionId,
-                        model: "claude-3-5-sonnet@20240620",
+                        model: 'claude-3-5-sonnet@20240620',
                         message: fullMessage
                     }),
                 });
@@ -373,16 +498,13 @@
 
                 const data = await response.json();
                 
-                // Remove loading message
                 document.getElementById('loadingMessage').remove();
 
-                // Display AI response with Markdown rendering
                 const renderedResponse = marked(data.response);
                 chatBox.innerHTML += `<div class="message ai-message">
                                         <div class="message-content">${renderedResponse}</div>
                                       </div>`;
 
-                // Apply syntax highlighting to code blocks and add copy buttons
                 document.querySelectorAll('pre code').forEach((block) => {
                     hljs.highlightBlock(block);
                     const button = document.createElement('button');
@@ -392,20 +514,16 @@
                     block.parentNode.insertBefore(button, block);
                 });
 
-                // Save chat history after receiving AI response
                 saveChatHistory();
             } catch (error) {
                 console.error('Error:', error);
-                // Remove loading message
                 document.getElementById('loadingMessage').remove();
                 chatBox.innerHTML += `<div class="message ai-message">
                                         <div class="message-content">Error: Unable to get a response from the AI. Please check your API URL and try again.</div>
                                       </div>`;
-                // Save chat history even if there's an error
                 saveChatHistory();
             }
 
-            // Scroll to the bottom of the chat box
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
@@ -414,14 +532,19 @@
             chatContainer.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Allow sending message with Enter key
         document.getElementById('chatInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
             }
         });
 
-        // Initialize marked options
+        function clearChat() {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = '';
+            currentVersionIndex = chatVersions.length;
+            saveChatHistory();
+        }
+
         marked.setOptions({
             highlight: function(code, lang) {
                 const language = hljs.getLanguage(lang) ? lang : 'plaintext';
