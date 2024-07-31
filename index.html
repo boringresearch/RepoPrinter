@@ -98,10 +98,9 @@
             position: relative;
         }
 
-        .copy-btn {
+        .copy-btn, .delete-btn {
             position: absolute;
             top: 5px;
-            right: 5px;
             padding: 5px 10px;
             background-color: var(--secondary-color);
             color: var(--text-color);
@@ -111,8 +110,21 @@
             font-size: 12px;
         }
 
+        .copy-btn {
+            right: 5px;
+        }
+
+        .delete-btn {
+            right: 70px;
+            background-color: #f44336;
+        }
+
         .copy-btn:hover {
             background-color: #FFA000;
+        }
+
+        .delete-btn:hover {
+            background-color: #d32f2f;
         }
 
         #chatContainer {
@@ -212,6 +224,11 @@
 
         #deleteVersionBtn:hover {
             background-color: #d32f2f;
+        }
+
+        .file-block {
+            position: relative;
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -409,8 +426,21 @@
                     let decodedContent = textDecoder.decode(binaryString);
                     let escapedContent = escapeHTML(decodedContent);
 
-                    outputDiv.innerHTML += `<h2>${item.path}</h2>
-                                            <pre><code>${escapedContent}</code></pre>`;
+                    const fileBlock = document.createElement('div');
+                    fileBlock.className = 'file-block';
+                    fileBlock.innerHTML = `<h2>${item.path}</h2>
+                                           <pre><code>${escapedContent}</code></pre>`;
+                    
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'delete-btn';
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = function() {
+                        fileBlock.remove();
+                        updateRepoContent();
+                    };
+                    fileBlock.querySelector('pre').appendChild(deleteButton);
+
+                    outputDiv.appendChild(fileBlock);
                     repoContent += `File: ${item.path}
 
 ${decodedContent}
@@ -418,6 +448,19 @@ ${decodedContent}
 `;
                 }
             }
+        }
+
+        function updateRepoContent() {
+            repoContent = '';
+            document.querySelectorAll('.file-block').forEach(block => {
+                const fileName = block.querySelector('h2').textContent;
+                const fileContent = block.querySelector('pre code').textContent;
+                repoContent += `File: ${fileName}
+
+${fileContent}
+
+`;
+            });
         }
 
         function copyToClipboard() {
