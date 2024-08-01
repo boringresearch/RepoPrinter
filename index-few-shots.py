@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repo Reader and AI Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.3/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/github.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #FFC107;
+            --background-color: #F5F5F5;
+            --text-color: #333;
+            --chat-user-bg: #E3F2FD;
+            --chat-ai-bg: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #1976D2;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #output {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        #output h2 {
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 4px;
+            padding: 16px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .copy-btn, .delete-btn {
+            position: absolute;
+            top: 5px;
+            padding: 5px 10px;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-btn {
+            right: 5px;
+        }
+
+        .delete-btn {
+            right: 70px;
+            background-color: #f44336;
+        }
+
+        .copy-btn:hover {
+            background-color: #FFA000;
+        }
+
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        #chatContainer {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        #chatBox {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background-color: var(--chat-user-bg);
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .ai-message {
+            background-color: var(--chat-ai-bg);
+        }
+
+        .message-content {
+            word-wrap: break-word;
+        }
+
+        .message-content pre {
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+
+        #jumpToChatBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #clearChatBtn {
+            background-color: #FF5722;
+        }
+
+        #clearChatBtn:hover {
+            background-color: #E64A19;
+        }
+
+        .version-control {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .version-control button {
+            margin: 0 10px;
+        }
+
+        #versionInfo {
+            font-size: 14px;
+            color: #666;
+        }
+
+        #deleteVersionBtn {
+            background-color: #f44336;
+        }
+
+        #deleteVersionBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        .file-block {
+            position: relative;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GitHub Repo Reader and AI Chat</h1>
+
+        <div class="input-group">
+            <input type="text" id="repoInput" placeholder="Enter repo link or name">
+            <input type="text" id="fileFilter" placeholder="Enter file filter (optional)">
+            <input type="text" id="fileUnselect" placeholder="Enter file unselect filter (optional)">
+            <input type="password" id="tokenInput" placeholder="Enter GitHub Token (optional)">
+            <input type="text" id="apiUrlInput" placeholder="API URL" value="http://127.0.0.1:5000/chat">
+        </div>
+
+        <div class="button-group">
+            <button onclick="getRepoContent()">Get Repo Content</button>
+            <button onclick="copyToClipboard()" id="copyBtn" style="display:none;">Copy to Clipboard</button>
+        </div>
+
+        <div id="output"></div>
+
+        <div id="chatContainer" style="display:none;">
+            <h2>Chat with AI about the repo</h2>
+            <div id="chatBox"></div>
+            <div class="input-group">
+                <input type="text" id="chatInput" placeholder="Type your message...">
+                <button id="sendButton" onclick="sendMessage()">Send</button>
+                <button id="clearChatBtn" onclick="clearChat()">Clear Chat</button>
+            </div>
+            <div class="version-control">
+                <button onclick="prevVersion()">&lt; Previous</button>
+                <span id="versionInfo">Version 1 / 1</span>
+                <button onclick="nextVersion()">Next &gt;</button>
+                <button id="deleteVersionBtn" onclick="deleteVersion()">Delete Version</button>
+            </div>
+        </div>
+    </div>
+
+    <button id="jumpToChatBtn" onclick="jumpToChat()" style="display:none;">Jump to Chat</button>
+
+    <script>
+        let repoContent = '';
+        let sessionId = Date.now().toString();
+        let chatVersions = [];
+        let currentVersionIndex = 0;
+
+        function loadChatHistory() {
+            const savedVersions = localStorage.getItem('chatVersions');
+            if (savedVersions) {
+                chatVersions = JSON.parse(savedVersions);
+                currentVersionIndex = chatVersions.length - 1;
+                displayCurrentVersion();
+            }
+        }
+
+        function saveChatHistory() {
+            const chatBox = document.getElementById('chatBox');
+            if (currentVersionIndex === chatVersions.length) {
+                chatVersions.push(chatBox.innerHTML);
+            } else {
+                chatVersions[currentVersionIndex] = chatBox.innerHTML;
+            }
+            localStorage.setItem('chatVersions', JSON.stringify(chatVersions));
+            updateVersionInfo();
+        }
+
+        function displayCurrentVersion() {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = chatVersions[currentVersionIndex] || '';
+            document.getElementById('chatContainer').style.display = 'block';
+            document.getElementById('jumpToChatBtn').style.display = 'block';
+            updateVersionInfo();
+            
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+                if (!block.previousSibling || !block.previousSibling.classList.contains('copy-btn')) {
+                    const button = document.createElement('button');
+                    button.className = 'copy-btn';
+                    button.textContent = 'Copy';
+                    button.addEventListener('click', () => copyCodeToClipboard(block));
+                    block.parentNode.insertBefore(button, block);
+                }
+            });
+        }
+
+        function updateVersionInfo() {
+            const versionInfo = document.getElementById('versionInfo');
+            versionInfo.textContent = `Version ${currentVersionIndex + 1} / ${chatVersions.length}`;
+        }
+
+        function prevVersion() {
+            if (currentVersionIndex > 0) {
+                currentVersionIndex--;
+                displayCurrentVersion();
+            }
+        }
+
+        function nextVersion() {
+            if (currentVersionIndex < chatVersions.length - 1) {
+                currentVersionIndex++;
+                displayCurrentVersion();
+            }
+        }
+
+        function deleteVersion() {
+            if (chatVersions.length > 0) {
+                chatVersions.splice(currentVersionIndex, 1);
+                if (currentVersionIndex >= chatVersions.length) {
+                    currentVersionIndex = chatVersions.length - 1;
+                }
+                if (currentVersionIndex < 0) {
+                    currentVersionIndex = 0;
+                }
+                localStorage.setItem('chatVersions', JSON.stringify(chatVersions));
+                displayCurrentVersion();
+            }
+        }
+
+        window.onload = loadChatHistory;
+
+        function escapeHTML(text) {
+            const map = {
+                '<': '&lt;',
+                '>': '&gt;',
+                '&': '&amp;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[<>&"']/g, function(m) { return map[m]; });
+        }
+
+        async function getRepoContent() {
+            const repoInput = document.getElementById('repoInput').value;
+            const pathFilter = document.getElementById('fileFilter').value;
+            const token = document.getElementById('tokenInput').value;
+            const outputDiv = document.getElementById('output');
+            const copyBtn = document.getElementById('copyBtn');
+            const chatContainer = document.getElementById('chatContainer');
+            const jumpToChatBtn = document.getElementById('jumpToChatBtn');
+
+            let [_, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
+            if (repoInput.startsWith('https://')) {
+                [_, _, owner, repo, ...path] = repoInput.split('/').filter(Boolean);
+            }
+            if (!owner || !repo) {
+                alert('Invalid input. Please input a complete GitHub URL or "owner/repo" format');
+                return;
+            }
+            const apiBaseUrl = 'https://api.github.com/repos';
+            let url = `${apiBaseUrl}/${owner}/${repo}/contents/${path.join('/')}`;
+
+            outputDiv.innerHTML = '';
+            repoContent = '';
+
+            await fetchRepoContent(url, pathFilter, outputDiv, token);
+
+            copyBtn.style.display = 'inline-block';
+            chatContainer.style.display = 'block';
+            jumpToChatBtn.style.display = 'block';
+
+            document.querySelectorAll('pre code').forEach((block) => {
+                const button = document.createElement('button');
+                button.className = 'copy-btn';
+                button.textContent = 'Copy';
+                button.addEventListener('click', () => copyCodeToClipboard(block));
+                block.parentNode.insertBefore(button, block);
+            });
+        }
+
+        async function fetchRepoContent(url, pathFilter, outputDiv, token) {
+            const unselectFilter = document.getElementById('fileUnselect').value;
+            const skipFolders = ['node_modules', 'dist'];
+            const headers = token ? { 'Authorization': `token ${token}` } : {};
+            let response = await fetch(url, { headers: headers });
+            let data = await response.json();
+
+            if (!Array.isArray(data)) {
+                alert(`Error fetching repo content: ${data.message}`);
+                return;
+            }
+
+            for (let item of data) {
+                if (item.type === 'dir') {
+                    if (skipFolders.some(folder => item.path.includes(folder))) {
+                        continue;
+                    }
+                    await fetchRepoContent(item.url, pathFilter, outputDiv, token);
+                } else if (item.type === 'file' && (pathFilter === '' || item.path.includes(pathFilter)) && !(unselectFilter !== '' && item.path.includes(unselectFilter))) {
+                    let fileResponse = await fetch(item.git_url, { headers: headers });
+                    let fileData = await fileResponse.json();
+                    let fileContent = atob(fileData.content);
+                    let binaryString = Uint8Array.from(atob(fileData.content), c => c.charCodeAt(0));
+                    let textDecoder = new TextDecoder('utf-8');
+                    let decodedContent = textDecoder.decode(binaryString);
+                    let escapedContent = escapeHTML(decodedContent);
+
+                    const fileBlock = document.createElement('div');
+                    fileBlock.className = 'file-block';
+                    fileBlock.innerHTML = `<h2>${item.path}</h2>
+                                           <pre><code>${escapedContent}</code></pre>`;
+                    
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'delete-btn';
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = function() {
+                        fileBlock.remove();
+                        updateRepoContent();
+                    };
+                    fileBlock.querySelector('pre').appendChild(deleteButton);
+
+                    outputDiv.appendChild(fileBlock);
+                    repoContent += `File: ${item.path}
+
+${decodedContent}
+
+`;
+                }
+            }
+        }
+
+        function updateRepoContent() {
+            repoContent = '';
+            document.querySelectorAll('.file-block').forEach(block => {
+                const fileName = block.querySelector('h2').textContent;
+                const fileContent = block.querySelector('pre code').textContent;
+                repoContent += `File: ${fileName}
+
+${fileContent}
+
+`;
+            });
+        }
+
+        function copyToClipboard() {
+            const outputDiv = document.getElementById('output');
+            const textToCopy = outputDiv.innerText;
+
+            let tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            alert('Content copied to clipboard');
+        }
+
+        function copyCodeToClipboard(codeBlock) {
+            const textToCopy = codeBlock.textContent;
+
+            let tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const button = codeBlock.previousSibling;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = 'Copy';
+            }, 2000);
+        }
+
+        async function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const chatBox = document.getElementById('chatBox');
+            const apiUrl = document.getElementById('apiUrlInput').value;
+            const userMessage = chatInput.value.trim();
+
+            if (userMessage === '') return;
+
+            chatBox.innerHTML += `<div class="message user-message">
+                                    <div class="message-content">${escapeHTML(userMessage)}</div>
+                                  </div>`;
+            chatInput.value = '';
+
+            chatBox.innerHTML += `<div class="message ai-message" id="loadingMessage">
+                                    <div class="message-content">
+                                        <div class="loading"></div> AI is thinking...
+                                    </div>
+                                  </div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const fullMessage = `${repoContent}
+
+Human: ${userMessage}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        model: 'claude-3-5-sonnet@20240620',
+                        message: fullMessage
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                
+                document.getElementById('loadingMessage').remove();
+
+                const renderedResponse = marked(data.response);
+                chatBox.innerHTML += `<div class="message ai-message">
+                                        <div class="message-content">${renderedResponse}</div>
+                                      </div>`;
+
+                document.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightBlock(block);
+                    const button = document.createElement('button');
+                    button.className = 'copy-btn';
+                    button.textContent = 'Copy';
+                    button.addEventListener('click', () => copyCodeToClipboard(block));
+                    block.parentNode.insertBefore(button, block);
+                });
+
+                saveChatHistory();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loadingMessage').remove();
+                chatBox.innerHTML += `<div class="message ai-message">
+                                        <div class="message-content">Error: Unable to get a response from the AI. Please check your API URL and try again.</div>
+                                      </div>`;
+                saveChatHistory();
+            }
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function jumpToChat() {
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function clearChat() {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = '';
+            currentVersionIndex = chatVersions.length;
+            saveChatHistory();
+        }
+
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-'
+        });
+    </script>
+</body>
+</html>
